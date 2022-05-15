@@ -4,10 +4,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.transaction.Transactional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.devsuperior.dsdeliver.dto.OrderDTO;
 import com.devsuperior.dsdeliver.dto.ProductDTO;
@@ -26,7 +25,7 @@ public class OrderService {
 	@Autowired
 	private ProductRepository productRepository;
 	
-	@Transactional
+	@Transactional(readOnly = true)
 	public List<OrderDTO> findAll() {
 		List<Order> list = repository.findOrdersWithProducts(); 
 			return list.stream().map(x -> new OrderDTO(x)).collect(Collectors.toList());		
@@ -37,7 +36,7 @@ public class OrderService {
 		Order order = new Order(null, dto.getAddress(), dto.getLatitude(), dto.getLongitude(),
 				Instant.now(), OrderStatus.PENDING);
 		for (ProductDTO p : dto.getProducts()) {
-			Product product = productRepository.getOne(p.getId());
+			Product product = productRepository.findById(p.getId()).get();
 			order.getProducts().add(product);
 		}
 		order = repository.save(order);
@@ -46,7 +45,7 @@ public class OrderService {
 	
 	@Transactional
 	public OrderDTO setDelivered(Long id) {
-		Order order = repository.getOne(id);
+		Order order = repository.findById(id).get();
 		order.setStatus(OrderStatus.DELIVERD);
 		order = repository.save(order);
 		return new OrderDTO(order);
